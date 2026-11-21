@@ -1,7 +1,7 @@
 'use strict';
 
 // Bei jeder Änderung an den App-Dateien erhöhen, damit die Handys die neue Version laden.
-const CACHE = 'pferd-v3';
+const CACHE = 'pferd-v4';
 const DATEIEN = [
   './',
   'index.html',

@@ -439,7 +439,7 @@ function schliesseFarbwahl() {
 function baueFarbwahl() {
   farbwahl.innerHTML = Object.entries(FELLFARBEN).map(([id, f]) => `
     <button class="farbe${id === zustand.fell ? ' aktiv' : ''}" data-fell="${id}" type="button">
-      <span class="klecks" style="background:#${f.fell.toString(16).padStart(6, '0')}"></span>${esc(f.name)}
+      <span class="klecks" style="background:#${f.farbe.toString(16).padStart(6, '0')}"></span>${esc(f.name)}
     </button>`).join('');
   farbwahl.querySelectorAll('.farbe').forEach((k) => k.addEventListener('click', () => {
     zustand.fell = k.dataset.fell;
