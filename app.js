@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
-import { bauePferd, FELLFARBEN } from './pferd-modell.js';
+import { ladePferd, FELLFARBEN } from './modell-echt.js';
 import { SCHICHTEN, TEILE, NEBENTEILE, teileDerSchicht } from './teile.js';
 import { neuesQuiz, aktuellesTeil, antworte, sterne, FRAGEN_PRO_RUNDE } from './quiz.js';
 
@@ -18,12 +18,12 @@ const zustand = {
   schicht: 'aussen',
   modus: 'entdecken',
   ton: speicher.lies('ton', true),
-  fell: speicher.lies('fell', 'fuchs'),
+  fell: speicher.lies('fell', 'brauner'),
   quiz: null,
   quizSperre: false,
   nutzerHatGedreht: false,
 };
-if (!FELLFARBEN[zustand.fell]) zustand.fell = 'fuchs';
+if (!FELLFARBEN[zustand.fell]) zustand.fell = 'brauner';
 
 const $ = (sel) => document.querySelector(sel);
 const leinwand = $('#buehne');
@@ -36,7 +36,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
 const szene = new THREE.Scene();
 const kamera = new THREE.PerspectiveCamera(38, 1, 0.05, 60);
-const ZIEL = new THREE.Vector3(0.17, 1.15, 0);
+const ZIEL = new THREE.Vector3(0.3, 1.03, 0);
 const BLICK = new THREE.Vector3(0.35, 0.2, 1).normalize();
 
 szene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a60, 1.9));
@@ -47,7 +47,17 @@ const gegenlicht = new THREE.DirectionalLight(0xdfe8ff, 0.7);
 gegenlicht.position.set(-3, 2, -4);
 szene.add(gegenlicht);
 
-const modell = bauePferd();
+karte.innerHTML = '<div class="kopf"><h2>Das Pferd kommt gleich … 🐴</h2></div><p class="leise" id="ladestand">Wird geladen …</p>';
+let modell;
+try {
+  modell = await ladePferd((anteil) => {
+    const p = document.getElementById('ladestand');
+    if (p) p.textContent = `Wird geladen … ${Math.round(anteil * 100)} %`;
+  });
+} catch (fehler) {
+  karte.innerHTML = '<div class="kopf"><h2>Das Pferd konnte nicht laden 😢</h2></div><p class="leise">Bitte prüfe die Internetverbindung und lade die Seite neu.</p>';
+  throw fehler;
+}
 szene.add(modell.boden);
 for (const g of Object.values(modell.gruppen)) szene.add(g);
 modell.setzeFell(zustand.fell);
@@ -75,7 +85,8 @@ function freieFlaeche() {
   }
   // Platz für eine typische Karte freihalten, damit das Pferd nicht bei jedem Teil springt
   const unten = schichten.top - Math.min(235, H * 0.32);
-  return { links: 0, rechts: B, oben, unten, B, H };
+  const links = listeFest() ? $('#teileliste').getBoundingClientRect().right + 8 : 0;
+  return { links, rechts: B, oben, unten, B, H };
 }
 
 function passeKameraAn(abstandNeu) {
@@ -89,7 +100,7 @@ function passeKameraAn(abstandNeu) {
     const tan = Math.tan(THREE.MathUtils.degToRad(kamera.fov / 2));
     const breite = Math.max(f.rechts - f.links, 120);
     const hoehe = Math.max(f.unten - f.oben, 120);
-    const abstand = Math.max((2.75 * f.H) / (2 * tan * breite), (2.5 * f.H) / (2 * tan * hoehe));
+    const abstand = Math.max((2.7 * f.H) / (2 * tan * breite), (2.25 * f.H) / (2 * tan * hoehe));
     kamera.position.copy(ZIEL).addScaledVector(BLICK, THREE.MathUtils.clamp(abstand, 3, 15));
     steuerung.target.copy(ZIEL);
     steuerung.update();
@@ -107,7 +118,6 @@ const GELB = 0xffc400;
 const GRUEN = 0x2fe070;
 const ROT = 0xff3b2f;
 const leuchten = new Map(); // teilId → { farbe, blinken, bis }
-let zuletztAn = new Set();
 
 function setzeLeuchten(teilId, farbe, { blinken = false, dauer = 0 } = {}) {
   leuchten.set(teilId, { farbe, blinken, bis: dauer ? performance.now() + dauer : 0 });
@@ -115,18 +125,11 @@ function setzeLeuchten(teilId, farbe, { blinken = false, dauer = 0 } = {}) {
 
 function leuchtenAktualisieren(jetzt) {
   for (const [id, l] of leuchten) if (l.bis && jetzt > l.bis) leuchten.delete(id);
-  for (const id of zuletztAn) {
-    if (!leuchten.has(id)) for (const m of modell.teilMeshes.get(id) || []) if (m.material.emissive) m.material.emissive.setHex(0);
-  }
+  const anzeigen = new Map();
   for (const [id, l] of leuchten) {
-    const staerke = l.blinken ? 0.15 + 0.6 * (0.5 + 0.5 * Math.sin(jetzt / 120)) : 0.55;
-    for (const m of modell.teilMeshes.get(id) || []) {
-      if (!m.material.emissive) continue;
-      m.material.emissive.setHex(l.farbe);
-      m.material.emissiveIntensity = staerke;
-    }
+    anzeigen.set(id, { farbe: l.farbe, staerke: l.blinken ? 0.1 + 0.8 * (0.5 + 0.5 * Math.sin(jetzt / 120)) : 0.75 });
   }
-  zuletztAn = new Set(leuchten.keys());
+  modell.zeigeLeuchten(zustand.schicht, anzeigen);
 }
 
 // ---------- Vorlesen ----------
@@ -178,13 +181,25 @@ const STARTTEXT = {
 
 function zeigeStartkarte() {
   const [titel, text] = STARTTEXT[zustand.schicht];
-  karte.innerHTML = `<div class="kopf"><h2>${esc(titel)}</h2></div><p class="leise">${esc(text)}</p>`;
+  karte.innerHTML = `<div class="kopf"><h2>${esc(titel)}</h2></div><p class="leise">${esc(text)}</p>${QUELLEN}`;
 }
+
+// Die 3D-Modelle stehen unter CC BY 4.0 und verlangen eine Namensnennung.
+const QUELLEN = `<p class="quellen">3D-Modelle:
+  <a href="https://sketchfab.com/3d-models/horse-2f4639623e684c44acb68922585d7a09" target="_blank" rel="noopener">„Horse“</a> von victorberdugo1,
+  <a href="https://sketchfab.com/3d-models/horse-skeleton-e31cac68387d4d8e9d4eccdbc319ceab" target="_blank" rel="noopener">„Horse Skeleton“</a> von SA Anatomy,
+  angepasst, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/deed.de" target="_blank" rel="noopener">CC BY 4.0</a></p>`;
 
 function zeigeTeil(id) {
   const teil = TEILE[id];
   leuchten.clear();
   setzeLeuchten(id, GELB);
+  zustand.ausgewaehlt = id;
+  const alleSchonDa = teileDerSchicht(teil.schicht).every((t) => entdeckt.has(t));
+  entdeckt.add(id);
+  speicher.schreib('entdeckt', [...entdeckt]);
+  const jetztAlle = !alleSchonDa && teileDerSchicht(teil.schicht).every((t) => entdeckt.has(t));
+  baueListe();
   karte.innerHTML = `
     <div class="kopf">
       <h2>${esc(teil.name)}</h2>
@@ -200,8 +215,61 @@ function zeigeTeil(id) {
     e.currentTarget.replaceWith(p);
     sprich(teil.fakt);
   });
-  sprich(`${teil.name}. ${teil.text}`);
+  if (jetztAlle) {
+    const lob = `Super! Du hast ${ALLE_ENTDECKT[teil.schicht]} entdeckt!`;
+    zeigeHinweis('🎉 ' + lob, false);
+    sprich(`${teil.name}. ${teil.text} ${lob}`);
+  } else {
+    sprich(`${teil.name}. ${teil.text}`);
+  }
 }
+
+// ---------- Teile-Liste an der Seite ----------
+const ALLE_ENTDECKT = { aussen: 'alle Teile außen', muskeln: 'alle Muskeln', skelett: 'alle Knochen' };
+const entdeckt = new Set(speicher.lies('entdeckt', []));
+const LISTE_FEST = window.matchMedia('(min-width: 900px) and (min-height: 560px)');
+const listeFest = () => LISTE_FEST.matches && zustand.modus !== 'quiz';
+const teileliste = $('#teileliste');
+
+function baueListe() {
+  const ids = teileDerSchicht(zustand.schicht).sort((a, b) => TEILE[a].name.localeCompare(TEILE[b].name, 'de'));
+  const schicht = SCHICHTEN.find((s) => s.id === zustand.schicht);
+  $('#liste-titel').textContent = `${schicht.symbol} ${schicht.name}`;
+  $('#liste-zaehler').textContent = `${ids.filter((id) => entdeckt.has(id)).length} von ${ids.length} entdeckt`;
+  $('#liste').innerHTML = ids.map((id) => {
+    const ja = entdeckt.has(id);
+    return `<li><button type="button" data-teil="${id}" class="${id === zustand.ausgewaehlt ? 'aktiv' : ''}"${id === zustand.ausgewaehlt ? ' aria-current="true"' : ''}>
+      <span class="haken${ja ? ' ja' : ''}" aria-hidden="true">${ja ? '✓' : ''}</span>${esc(TEILE[id].name)}${ja ? '<span class="sr">(entdeckt)</span>' : ''}
+    </button></li>`;
+  }).join('');
+}
+
+function oeffneListe() {
+  teileliste.classList.add('offen');
+  $('#teile-lasche').setAttribute('aria-expanded', 'true');
+}
+function schliesseListe() {
+  teileliste.classList.remove('offen');
+  $('#teile-lasche').setAttribute('aria-expanded', 'false');
+}
+
+$('#liste').addEventListener('click', (e) => {
+  const knopf = e.target.closest('[data-teil]');
+  if (!knopf) return;
+  zeigeTeil(knopf.dataset.teil);
+  if (!LISTE_FEST.matches) schliesseListe();
+});
+$('#teile-lasche').addEventListener('click', () => {
+  schliesseFarbwahl();
+  if (teileliste.classList.contains('offen')) schliesseListe(); else oeffneListe();
+});
+$('#liste-zu').addEventListener('click', schliesseListe);
+$('#haken-weg').addEventListener('click', () => {
+  for (const id of teileDerSchicht(zustand.schicht)) entdeckt.delete(id);
+  speicher.schreib('entdeckt', [...entdeckt]);
+  baueListe();
+});
+LISTE_FEST.addEventListener?.('change', () => { schliesseListe(); groesseAnpassen(); });
 
 // ---------- Karte: Quiz ----------
 function fortschrittHtml() {
@@ -290,15 +358,13 @@ function findeTeil(x, y) {
   const r = leinwand.getBoundingClientRect();
   ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
   strahl.setFromCamera(ndc, kamera);
-  for (const t of strahl.intersectObject(modell.gruppen[zustand.schicht], true)) {
-    const d = t.object.userData;
-    if (d.teilId || d.neben) return d;
-  }
-  return null;
+  const treffer = strahl.intersectObject(modell.gruppen[zustand.schicht], true)[0];
+  return treffer ? modell.teilAn(zustand.schicht, treffer) : null;
 }
 
 function tippe(x, y) {
   schliesseFarbwahl();
+  if (!LISTE_FEST.matches && teileliste.classList.contains('offen')) { schliesseListe(); return; }
   const ziel = findeTeil(x, y);
   if (!ziel) return;
   if (zustand.modus === 'quiz') { quizAntwort(ziel); return; }
@@ -335,6 +401,8 @@ function setzeSchicht(schicht) {
     k.setAttribute('aria-pressed', String(an));
   });
   leuchten.clear();
+  zustand.ausgewaehlt = null;
+  baueListe();
   if (zustand.modus === 'quiz') starteQuiz();
   else {
     zeigeStartkarte();
@@ -349,6 +417,11 @@ function setzeModus(modus) {
   $('#modus-entdecken').setAttribute('aria-pressed', String(modus === 'entdecken'));
   $('#modus-quiz').setAttribute('aria-pressed', String(modus === 'quiz'));
   leuchten.clear();
+  zustand.ausgewaehlt = null;
+  document.body.classList.toggle('im-quiz', modus === 'quiz');
+  schliesseListe();
+  baueListe();
+  passeKameraAn(false); // Im Quiz ist die Liste weg, das Pferd rückt in die Mitte
   if (modus === 'quiz') starteQuiz();
   else { zustand.quiz = null; zeigeStartkarte(); }
 }
@@ -405,24 +478,19 @@ $('#knopf-zurueck').addEventListener('click', () => {
 
 // ---------- Los geht's ----------
 zeigeTon();
+document.body.classList.add('bereit');
 setzeModus('entdecken');
 for (const [id, g] of Object.entries(modell.gruppen)) g.visible = id === zustand.schicht;
 groesseAnpassen();
 
-const uhr = new THREE.Clock();
 renderer.setAnimationLoop(() => {
-  const t = uhr.getElapsedTime();
-  for (const s of modell.schweife) {
-    s.rotation.y = Math.sin(t * 1.7) * 0.22;
-    s.rotation.z = Math.sin(t * 0.9) * 0.05;
-  }
   leuchtenAktualisieren(performance.now());
   steuerung.update();
   renderer.render(szene, kamera);
 });
 
 // Für Tests im Browser
-window.pferdApp = { modell, zustand, kamera, steuerung, findeTeil, tippe, setzeSchicht, setzeModus };
+window.pferdApp = { modell, zustand, kamera, steuerung, findeTeil, tippe, setzeSchicht, setzeModus, leuchten, setzeLeuchten };
 
 if ('serviceWorker' in navigator) {
   // Ist schon eine ältere Version aktiv, wird nach einem Update einmal neu geladen.

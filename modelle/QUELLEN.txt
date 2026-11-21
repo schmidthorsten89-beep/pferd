@@ -1,0 +1,13 @@
+3D-Modelle im Pferde-Entdecker
+
+pferd.glb
+  This work is based on "Horse" (https://sketchfab.com/3d-models/horse-2f4639623e684c44acb68922585d7a09)
+  by victorberdugo1 (https://sketchfab.com/victorberdugo1)
+  licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  Geändert: in GLB umgewandelt, Material vereinfacht, Normal-Textur als JPEG.
+
+skelett.glb
+  This work is based on "Horse Skeleton" (https://sketchfab.com/3d-models/horse-skeleton-e31cac68387d4d8e9d4eccdbc319ceab)
+  by SA Anatomy (https://sketchfab.com/saanatomy)
+  licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  Geändert: in GLB umgewandelt.

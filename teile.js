@@ -158,6 +158,7 @@ export const TEILE = {
 // Teile, die man sieht, die aber keine eigene Karte haben. Beim Antippen gibt es nur einen kurzen Hinweis.
 export const NEBENTEILE = {
   kopf: 'Das ist der Kopf.',
+  koerper: 'Das ist der Körper vom Pferd.',
   bein: 'Das ist ein Bein.',
   brust: 'Das ist die Brust.',
   po: 'Das ist der Po vom Pferd.',

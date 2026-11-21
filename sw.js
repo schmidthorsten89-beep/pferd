@@ -1,7 +1,7 @@
 'use strict';
 
 // Bei jeder Änderung an den App-Dateien erhöhen, damit die Handys die neue Version laden.
-const CACHE = 'pferd-v1';
+const CACHE = 'pferd-v3';
 const DATEIEN = [
   './',
   'index.html',
@@ -9,9 +9,13 @@ const DATEIEN = [
   'app.js',
   'teile.js',
   'quiz.js',
-  'pferd-modell.js',
+  'modell-echt.js',
+  'modelle/pferd.glb',
+  'modelle/skelett.glb',
   'vendor/three.module.min.js',
   'vendor/OrbitControls.js',
+  'vendor/loaders/GLTFLoader.js',
+  'vendor/utils/BufferGeometryUtils.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

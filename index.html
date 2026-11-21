@@ -31,6 +31,21 @@
 
   <div id="farbwahl" class="farbwahl" hidden></div>
 
+  <button id="teile-lasche" class="teile-lasche" type="button" aria-expanded="false" aria-controls="teileliste">
+    <span class="symbol" aria-hidden="true">📋</span>Teile
+  </button>
+  <aside id="teileliste" class="teileliste" aria-label="Alle Teile zum Antippen">
+    <div class="liste-kopf">
+      <div class="liste-titel">
+        <h2 id="liste-titel">Außen</h2>
+        <p id="liste-zaehler" class="liste-zaehler"></p>
+      </div>
+      <button id="liste-zu" class="klein-rund" type="button" aria-label="Liste schließen">✕</button>
+    </div>
+    <ul id="liste" class="liste"></ul>
+    <button id="haken-weg" class="haken-weg" type="button">Häkchen zurücksetzen</button>
+  </aside>
+
   <div id="hinweis" class="hinweis" role="status" hidden></div>
 
   <section id="karte" class="karte" aria-live="polite"></section>

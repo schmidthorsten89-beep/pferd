@@ -10,6 +10,7 @@
   --rand: rgba(60, 40, 20, 0.14);
   --schatten: 0 6px 20px rgba(40, 30, 20, 0.18);
   --schrift: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --seite: 0px; /* Breite der festen Teile-Liste links */
   color-scheme: light dark;
 }
 
@@ -158,10 +159,142 @@ button:focus-visible {
 
 .farbe.aktiv { background: rgba(232, 121, 43, 0.18); }
 
+/* ---------- Teile-Liste ---------- */
+.teile-lasche {
+  position: fixed;
+  left: 0;
+  top: 40%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 64px;
+  min-height: 76px;
+  padding: 8px 6px;
+  border-radius: 0 20px 20px 0;
+  background: var(--flaeche);
+  box-shadow: var(--schatten);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.teile-lasche .symbol { font-size: 1.6rem; line-height: 1.1; }
+
+.teileliste {
+  position: fixed;
+  left: 12px;
+  top: calc(env(safe-area-inset-top) + 72px);
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  z-index: 5;
+  width: min(270px, calc(100vw - 72px));
+  display: flex;
+  flex-direction: column;
+  background: var(--flaeche);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+  box-shadow: var(--schatten);
+  transform: translateX(calc(-100% - 24px));
+  visibility: hidden;
+  transition: transform 0.25s ease, visibility 0.25s;
+}
+
+.teileliste.offen {
+  transform: none;
+  visibility: visible;
+}
+
+.liste-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px 6px 18px;
+}
+
+.liste-titel { flex: 1; min-width: 0; }
+
+.liste-kopf h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.liste-zaehler {
+  margin: 2px 0 0;
+  color: var(--text-leise);
+  font-size: 0.95rem;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 4px 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.liste button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.liste button.aktiv { background: rgba(232, 121, 43, 0.2); }
+
+.haken {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--rand);
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.haken.ja {
+  background: var(--gut);
+  border-color: var(--gut);
+  color: #fff;
+}
+
+.haken-weg {
+  margin: 4px 12px 12px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-leise);
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+body.im-quiz .teileliste,
+body.im-quiz .teile-lasche,
+body:not(.bereit) .teileliste,
+body:not(.bereit) .teile-lasche { display: none; }
+
+/* Genug Platz: Liste steht fest am Rand, Karte und Schicht-Knöpfe rücken nach rechts */
+@media (min-width: 900px) and (min-height: 560px) {
+  :root { --seite: 296px; }
+  .teileliste { transform: none; visibility: visible; transition: none; }
+  .teile-lasche, #liste-zu { display: none; }
+  body.im-quiz { --seite: 0px; }
+}
+
 /* ---------- Hinweis (kurz) ---------- */
 .hinweis {
   position: fixed;
-  left: 50%;
+  left: calc(50% + var(--seite) / 2);
   top: calc(env(safe-area-inset-top) + 76px);
   transform: translateX(-50%);
   max-width: calc(100% - 32px);
@@ -181,10 +314,10 @@ button:focus-visible {
 /* ---------- Infokarte ---------- */
 .karte {
   position: fixed;
-  left: 50%;
+  left: calc(50% + var(--seite) / 2);
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom) + 104px);
-  width: min(560px, calc(100% - 24px));
+  width: min(560px, calc(100% - 24px - var(--seite)));
   max-height: 42vh;
   overflow-y: auto;
   background: var(--flaeche);
@@ -215,6 +348,15 @@ button:focus-visible {
 }
 
 .karte .leise { color: var(--text-leise); }
+
+.karte .quellen {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-leise);
+}
+
+.karte .quellen a { color: inherit; }
 
 .klein-rund {
   flex: none;
@@ -289,12 +431,12 @@ button:focus-visible {
 /* ---------- Schichten ---------- */
 .schichten {
   position: fixed;
-  left: 50%;
+  left: calc(50% + var(--seite) / 2);
   transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom) + 12px);
   display: flex;
   gap: 8px;
-  width: min(560px, calc(100% - 24px));
+  width: min(560px, calc(100% - 24px - var(--seite)));
 }
 
 .schicht {
@@ -357,4 +499,13 @@ button:focus-visible {
   inset: 40% 16px auto;
   text-align: center;
   font-size: 1.2rem;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
