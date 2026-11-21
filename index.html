@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Pferde-Entdecker</title>
+  <meta name="description" content="Ein 3D-Pferd zum Antippen und Entdecken: außen, Muskeln und Skelett, mit Quiz für Kinder.">
+  <meta name="theme-color" content="#bfe3f7">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="buehne" aria-label="3D-Pferd. Tippe auf ein Teil."></canvas>
+
+  <header class="kopfleiste">
+    <div class="modi" role="group" aria-label="Modus">
+      <button id="modus-entdecken" class="modus aktiv" type="button"><span class="ikon" aria-hidden="true">🔍 </span>Entdecken</button>
+      <button id="modus-quiz" class="modus" type="button"><span class="ikon" aria-hidden="true">⭐ </span>Quiz</button>
+    </div>
+    <div class="werkzeuge">
+      <button id="knopf-farbe" class="rund" type="button" aria-label="Fellfarbe wählen" aria-expanded="false">🎨</button>
+      <button id="knopf-ton" class="rund" type="button" aria-label="Vorlesen ausschalten">🔊</button>
+      <button id="knopf-zurueck" class="rund" type="button" aria-label="Pferd zurückdrehen">↺</button>
+    </div>
+  </header>
+
+  <div id="farbwahl" class="farbwahl" hidden></div>
+
+  <div id="hinweis" class="hinweis" role="status" hidden></div>
+
+  <section id="karte" class="karte" aria-live="polite"></section>
+
+  <nav class="schichten" aria-label="Schicht wählen">
+    <button class="schicht aktiv" data-schicht="aussen" type="button"><span class="symbol">🐴</span>Außen</button>
+    <button class="schicht" data-schicht="muskeln" type="button"><span class="symbol">💪</span>Muskeln</button>
+    <button class="schicht" data-schicht="skelett" type="button"><span class="symbol">🦴</span>Skelett</button>
+  </nav>
+
+  <noscript><p class="ohne-js">Für den Pferde-Entdecker muss JavaScript an sein.</p></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
